@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
+using System.Runtime.InteropServices;
 
 /*
     참조
@@ -12,6 +13,19 @@ namespace WindowsFormsApplication1
 {
     public partial class Form1 : Form
     {
+        public const int WM_NCLBUTTONDOWN = 0xA1;
+        public const int HT_CAPTION = 0x2;
+
+        [DllImportAttribute("user32.dll")]
+        public static extern bool ReleaseCapture();
+
+        [DllImportAttribute("user32.dll")]
+        public static extern int SendMessage(IntPtr hWnd, int Msg, int wParam, int lParam);
+        
+        private const int nDragSize = 5;
+        private bool m_bDrag = false;
+        
+
         private string strPngName;
         private Color backgroundColor;
 
@@ -118,10 +132,39 @@ namespace WindowsFormsApplication1
         private void pictureBox1_MouseDown(object sender, MouseEventArgs e)
         {
             PictureBox pb = (PictureBox)sender;
+            if (pb.Image == null)
+                return;
+
             Bitmap bmp = new Bitmap(pb.Image);
             backgroundColor = bmp.GetPixel(e.X, e.Y);
             SavePng(strPngName);
             this.Close();
+        }
+
+        private void Form1_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                if (e.Y < nDragSize)
+                    m_bDrag = true;
+            }
+        }
+
+        private void Form1_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                if (m_bDrag)
+                {
+                    ReleaseCapture();
+                    SendMessage(this.Handle, WM_NCLBUTTONDOWN, HT_CAPTION, 0);
+                }
+            }
+        }
+
+        private void Form1_MouseUp(object sender, MouseEventArgs e)
+        {
+            m_bDrag = false;
         }
     }
 }
